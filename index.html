@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <title>THBC / MTEC Staking DApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="utils.js"></script>
+  <script src="wallet.js"></script>
+  <script src="staking.js"></script>
+  <script src="app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">TH</div>
+        <div class="brand-text">
+          <div class="title">THBC / MTEC DeFi Hub</div>
+          <div class="subtitle">Swap THBC → Stake MTEC 365 Days</div>
+        </div>
+      </div>
+      <div class="wallet-box">
+        <button id="btnConnect" class="btn primary">เชื่อมต่อกระเป๋า</button>
+        <div id="walletAddress" class="wallet-address">ยังไม่เชื่อมต่อ</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Swap THBC → MTEC -->
+      <section class="card">
+        <h2>Swap THBC → MTEC</h2>
+        <p class="muted">แปลงเหรียญ THBC เป็น MTEC เพื่อใช้สำหรับ Staking</p>
+
+        <div class="field-row">
+          <label>จำนวน THBC</label>
+          <div class="input-with-max">
+            <input id="inputThbcAmount" type="number" min="0" step="0.000001" placeholder="0.0" />
+            <button id="btnMaxThbc" class="btn ghost">MAX</button>
+          </div>
+          <div class="hint">
+            ยอดคงเหลือ THBC: <span id="thbcBalance">-</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>คาดว่าจะได้รับ MTEC (ประมาณ)</label>
+          <input id="outputMtecEstimate" type="text" readonly />
+        </div>
+
+        <div class="field-row">
+          <label>Slippage</label>
+          <select id="selectSlippage">
+            <option value="1">1%</option>
+            <option value="2" selected>2%</option>
+            <option value="3">3%</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button id="btnSwapThbcMtec" class="btn primary full">Swap THBC → MTEC</button>
+        </div>
+      </section>
+
+      <!-- Stake MTEC -->
+      <section class="card">
+        <h2>Stake MTEC 365 วัน</h2>
+        <p class="muted">รับ APY 30% และค่าแนะนำ 10% (จ่ายเมื่อครบสัญญา)</p>
+
+        <div class="field-row">
+          <label>จำนวน MTEC ที่ต้องการ Stake</label>
+          <div class="input-with-max">
+            <input id="inputStakeAmount" type="number" min="0" step="0.000001" placeholder="0.0" />
+            <button id="btnMaxMtec" class="btn ghost">MAX</button>
+          </div>
+          <div class="hint">
+            ยอดคงเหลือ MTEC: <span id="mtecBalance">-</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>Referrer (ผู้แนะนำ)</label>
+          <input id="inputReferrer" type="text" placeholder="0x... (เว้นว่างได้)" />
+          <div class="hint">
+            ระบบจะดึงค่าจากลิงก์อัตโนมัติถ้ามีพารามิเตอร์ <code>?ref=0x...</code>
+          </div>
+        </div>
+
+        <div class="actions two">
+          <button id="btnApproveMtec" class="btn secondary">Approve MTEC</button>
+          <button id="btnStakeMtec" class="btn primary">Stake MTEC</button>
+        </div>
+
+        <hr class="divider" />
+
+        <h3>สถานะสัญญา Staking ของคุณ</h3>
+        <div class="grid-info">
+          <div class="info-item">
+            <span class="label">จำนวนที่ Stake</span>
+            <span id="infoStakedAmount" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">เริ่มต้นเมื่อ</span>
+            <span id="infoStartTime" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">ครบกำหนด</span>
+            <span id="infoEndTime" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">APY ปัจจุบัน</span>
+            <span id="infoApy" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">% Referral</span>
+            <span id="infoReferral" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">รางวัล Staking (ประมาณ)</span>
+            <span id="infoStakingReward" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">รางวัล Referral (ประมาณ)</span>
+            <span id="infoReferralReward" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">สถานะ Claim</span>
+            <span id="infoClaimStatus" class="value">-</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Countdown</span>
+            <span id="infoCountdown" class="value">-</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btnClaim" class="btn success full">Claim เมื่อครบกำหนด</button>
+        </div>
+      </section>
+
+      <!-- Referral link -->
+      <section class="card">
+        <h2>Referral Link ของคุณ</h2>
+        <p class="muted">คนที่กดลิงก์แล้ว Stake ผ่านคุณ จะได้รับค่าแนะนำ 10% เป็น MTEC</p>
+
+        <div class="field-row">
+          <label>ลิงก์แนะนำ</label>
+          <div class="input-with-copy">
+            <input id="inputReferralLink" type="text" readonly />
+            <button id="btnCopyReferral" class="btn ghost">Copy</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      THBC / MTEC DeFi · Powered by Kaojino Dragon Chain
+    </footer>
+  </div>
+</body>
+</html>
